@@ -1,14 +1,10 @@
-FROM alpine:latest
+FROM python:3.13-slim-bookworm
 WORKDIR /app
 ARG DISCORD_TOKEN
 ARG CHANNEL_ID
 ARG GUILD_ID
-# Install python/pip
-ENV PYTHONUNBUFFERED=1
-RUN apk add --update --no-cache python3 && ln -sf python3 /usr/bin/python
-RUN apk add --no-cache py3-pip
 COPY requiremnts.txt requiremnts.txt
-RUN apk add requiremnts.txt
+RUN pip3 install -r requiremnts.txt
 COPY . .
-RUN apk add -y ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg
 CMD [ "python3", "main.py" ]
