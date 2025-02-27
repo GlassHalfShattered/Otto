@@ -11,18 +11,26 @@ import yt_dlp
 
 
 
-#STEP 0: LOAD OUR TOKEN
 load_dotenv()
 ID: Final[str] = os.getenv('CHANNEL_ID')
 guid: Final[str] = os.getenv('GUILD_ID')
-class Client(commands.Bot):
+intents = discord.Intents.default()
+intents.message_content = True
+voice_clients = {}
+yt_dlp_options = {"format": "bestaudio/best"}
+ytdl = yt_dlp.YoutubeDL(yt_dlp_options)
+queues = {}
+ffmpeg_options = {'options': '-vn'}
+GUILD_ID = discord.Object(guid)
+
+
+class Client(commands.Bot,):
+    def __init__(self):
+        super().__init__(command_prefix="!", intents=intents)
     async def on_ready(self):
         print(f'Logged on as {self.user}')
-
-
-    
-        
-    async def sync(self):
+      
+    #async def sync(self,):
         try:
             guild = discord.Object(guid)
             synced = await self.tree.sync(guild=guild)
@@ -36,20 +44,12 @@ class Client(commands.Bot):
     async def on_message(self, message):
         print(f'Message From {message.author}: {message.content}')
 
-intents = discord.Intents.default()
-intents.message_content = True
-client = commands.Bot(command_prefix="!", intents=intents)
-voice_clients = {}
-yt_dlp_options = {"format": "bestaudio/best"}
-ytdl = yt_dlp.YoutubeDL(yt_dlp_options)
-queues = {}
-ffmpeg_options = {'options': '-vn'}
-GUILD_ID = discord.Object(guid)
+client = Client()
                           
 async def Loadcog():
         for filename in os.listdir("./cogs"):
              if filename.endswith(".py"):
-                  await client.load_extension(f"cogs.{filename[:-3]}")
+                 await client.load_extension(f"cogs.{filename[:-3]}")
 
 
 async def main():
