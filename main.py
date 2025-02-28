@@ -29,8 +29,9 @@ class Client(commands.Bot,):
         super().__init__(command_prefix="!", intents=intents)
     async def on_ready(self):
         print(f'Logged on as {self.user}')
-      
-    #async def sync(self,):
+
+
+   #Sync(self,):
         try:
             guild = discord.Object(guid)
             synced = await self.tree.sync(guild=guild)
