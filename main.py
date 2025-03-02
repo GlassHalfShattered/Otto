@@ -8,13 +8,14 @@ load_dotenv()
 GUILD_ID = discord.Object(os.getenv('GUILD_ID'))
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 class Client(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="!", intents=intents)
     
     async def setup_hook(self):
-        # This runs after the bot connects but before on_ready
+        
         await self.tree.sync(guild=GUILD_ID)
         print(f"Commands synced to guild {GUILD_ID.id}")
 
@@ -31,6 +32,7 @@ async def load_cogs():
                 print(f"Loaded cog: {filename[:-3]}")
             except Exception as e:
                 print(f"Failed to load cog {filename[:-3]}: {e}")
+
 
 async def main():
     async with client:
