@@ -34,7 +34,7 @@ class dicebot(commands.Cog):
     async def dice_roller(self, interaction: discord.Interaction, dice_amount:str, dice_value:str):
         roll = dice_amount+'d'+dice_value
         result = dice.roll(roll)
-        await interaction.response.send_message(f'{interaction.user.name}rolled: {result}')
+        await interaction.response.send_message(f'{interaction.user.name} rolled: {result}')
 
         
 class DiceSize(discord.ui.View):
