@@ -7,6 +7,8 @@ import math
 import random
 from main import GUILD_ID
 import time
+import csv
+import io
 
 
 user_cooldowns = {}
@@ -91,8 +93,20 @@ class LevelSys(commands.Cog):
         if user_id in user_cooldowns:
             last_triggered = user_cooldowns[user_id]
             if current_time - last_triggered < COOLDOWN_TIME:
-                return
+                try: 
+                    with sqlite3.connect(self.db_path) as connection:
+                        cursor = connection.cursor()
+                        cursor.execute("SELECT Number_Of_Messages FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, user_id))
+                        result = cursor.fetchone()
+                        number_of_messages = result[0] + 1
+                        cursor.execute("UPDATE Users SET Number_Of_Messages = ? WHERE Guild_id = ? AND User_id = ?", (number_of_messages,guild_id, user_id))
+                        connection.commit()
+                    return        
+                except Exception as e:
+                    print(e)
         user_cooldowns[user_id] = current_time
+
+
         try:
             with sqlite3.connect(self.db_path) as connection:
                 cursor = connection.cursor()
@@ -103,25 +117,30 @@ class LevelSys(commands.Cog):
                     cur_level = 0
                     xp = random.randint(10, 20)
                     level_up_Xp = 100
-                    cursor.execute("INSERT INTO Users (Guild_id, User_id, Level, Xp, Level_Up_XP) Values (?,?,?,?,?)",(guild_id, user_id, cur_level, xp, level_up_Xp))
+                    username = message.author.name
+                    number_of_messages = 1
+                    cursor.execute("INSERT INTO Users (Guild_id, User_id, Level, Xp, Level_Up_XP, Username, Number_Of_Messages) Values (?,?,?,?,?,?,?)",
+                    (guild_id, user_id, cur_level, xp, level_up_Xp, username, number_of_messages))
                 else:
                     cur_level = result[2]
                     xp = result[3] + random.randint(10, 20)
                     level_up_xp = result[4]
-                    cursor.execute("UPDATE Users SET Level=?, Xp = ?, Level_Up_XP = ? WHERE Guild_id = ? AND User_Id = ?", (cur_level, xp, level_up_xp, guild_id, user_id))
+                    number_of_messages = result[6] + 1
+                    cursor.execute("UPDATE Users SET Level = ?, Xp = ?, Level_Up_XP = ?, Number_Of_Messages = ?  WHERE Guild_id = ? AND User_Id = ?", 
+                    (cur_level, xp, level_up_xp, number_of_messages, guild_id, user_id))
                     if xp >= level_up_xp:
                         cur_level += 1
                         level_up_xp = math.ceil(50 *cur_level ** 2 + 100 * cur_level + 50)
                         await message.channel.send(f"{message.author.mention} has leveled up to level {cur_level}!")
                         
-                        cursor.execute("UPDATE Users SET Level=?, Xp = ?, Level_Up_XP = ? WHERE Guild_id = ? AND User_Id = ?", (cur_level, xp, level_up_xp, guild_id, user_id))
+                        cursor.execute("UPDATE Users SET Level = ?, Xp = ?, Level_Up_XP = ? WHERE Guild_id = ? AND User_Id = ?", (cur_level, xp, level_up_xp, guild_id, user_id))
                 connection.commit()        
 
         except Exception as e:
             print(f"Database error: {e}")
 
-    @app_commands.command(name="level")
-    async def level(self, interaction: discord.Interaction):
+    @app_commands.command(name="stats")
+    async def stats(self, interaction: discord.Interaction):
         member_id = interaction.user.id
         guild_id = interaction.guild.id
         with sqlite3.connect(self.db_path) as connection:
@@ -133,16 +152,50 @@ class LevelSys(commands.Cog):
         level = result[2]
         xp = result[3]
         level_up_xp = result[4]
+        number_of_messages = result[6]
 
-        level_embed = discord.Embed(title='level', description="User's level", color=discord.Color.blue())
+        level_embed = discord.Embed(title='stats', description="User's level", color=discord.Color.blue())
         level_embed.add_field(name=f"{interaction.user.name}'s total XP: ", value=f"{xp}", inline=False)
         level_embed.add_field(name=f"{interaction.user.name}'s level: ", value=f"{level}", inline=False)
         level_embed.add_field(name=f"{interaction.user.name}'s next level up: ", value=f"{level_up_xp}", inline=False)
+        level_embed.add_field(name=f"{interaction.user.name}'total message count: ", value=f"{number_of_messages}", inline=False)
+
         level_embed.set_footer(text=f"Requested by {interaction.user.name}.", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         await interaction.response.send_message(embed=level_embed)
         connection.commit()
 
-      
+        
+    @app_commands.command(name="export", description="Download a CSV file of server activity data")      
+    async def export(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                    cursor = connection.cursor()
+                    cursor.execute(
+                        "SELECT User_id, Level, Xp, Level_Up_Xp, Username, Number_Of_Messages FROM Users WHERE Guild_id = ? ORDER BY Level DESC, Xp DESC",
+                        (interaction.guild_id,)
+                    )
+                    results = cursor.fetchall()
+                    fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"]
+                    data = [dict(zip(fieldnames, row)) for row in results]
+
+            # Create a string buffer to write the CSV into memory
+
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"])
+            
+            # Write the header and data
+            writer.writeheader()
+            writer.writerows(data)
+
+            output.seek(0)
+            csv_file = discord.File(fp=output, filename="exported_data.csv")
+            await interaction.response.send_message("Here’s your CSV file!", file=csv_file, ephemeral= True)
+            output.close()
+        except Exception as e:
+            print(e)
+
+
+            
     @app_commands.command(name="leaderboard", description="Displays the top levelers in the server")
     async def leaderboard(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
