@@ -2,5 +2,6 @@ __pycache__
 .env
 .gitignore
 .dockerignore
-RegisterExorcist.py
-config
+level.db
+Exorcists.db
+ViewExorcist.py
