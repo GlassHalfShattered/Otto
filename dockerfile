@@ -7,4 +7,5 @@ COPY requiremnts.txt requiremnts.txt
 RUN pip3 install -r requiremnts.txt
 COPY . .
 RUN apt-get update && apt-get install -y ffmpeg
+RUN touch config/db/Exorcists.db
 CMD [ "python3", "main.py" ]

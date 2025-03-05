@@ -178,12 +178,10 @@ class LevelSys(commands.Cog):
                     fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"]
                     data = [dict(zip(fieldnames, row)) for row in results]
 
-            # Create a string buffer to write the CSV into memory
 
             output = io.StringIO()
             writer = csv.DictWriter(output, fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"])
             
-            # Write the header and data
             writer.writeheader()
             writer.writerows(data)
 
