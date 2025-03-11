@@ -23,22 +23,22 @@ class CreateID(commands.Cog):
                 cursor.execute("SELECT Name, XID, Agenda, Blastphemy, Image, Sex, Height, Weight, Hair, Eyes, Cat_Rating FROM Exorcists WHERE CID = ?", (cid,))
                 result = cursor.fetchone()
 
-            img = Image.open('./config/images/IDCard.png')
+            img = Image.open('/app/config/images/IDCard.png')
 
             url = result[4]
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
             response = requests.get(url, headers=headers)
             response.raise_for_status()  
             pfp = Image.open(BytesIO(response.content)).convert("RGBA")
-            output_path = f'./config/images/{cid}.png'
+            output_path = f'/app/config/images/{cid}.png'
             size = (167, 207)
 
             
             pfp_resized = pfp.resize(size, Image.Resampling.LANCZOS)
 
            
-            myFont = ImageFont.truetype('arial.ttf', 20)
-            Font2 = ImageFont.truetype('arial.ttf', 65)
+            myFont = ImageFont.truetype('/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', 20)
+            Font2 = ImageFont.truetype('/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', 65)
 
            
             I1 = ImageDraw.Draw(img)
@@ -55,7 +55,7 @@ class CreateID(commands.Cog):
             I1.text((241, 280), cid, font=myFont, fill=(0, 0, 0))
 
             
-            midpoint = './config/images/ID2.png'
+            midpoint = '/app/config/images/ID2.png'
             img.save(midpoint)
 
             img2 = Image.open(midpoint)
@@ -67,7 +67,8 @@ class CreateID(commands.Cog):
             await interaction.response.send_message(f"Your Registration Number Is {cid}, And your ID has been mailed to you. Until The Stain Is Wiped Away", ephemeral=True)
 
         except Exception as e:
-            print(e)
+            print(f"Error in createid: {e}")  # Debug
+            await interaction.response.send_message(f"Failed to generate ID: {str(e)}", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(CreateID(bot), guilds=[GUILD_ID])

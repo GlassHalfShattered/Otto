@@ -4,4 +4,3 @@ __pycache__
 .dockerignore
 level.db
 Exorcists.db
-ViewExorcist.py
