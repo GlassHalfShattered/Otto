@@ -883,7 +883,8 @@ class SheetView(discord.ui.View):
                                "Stress, Injuries, Sin, Total_Sin_Marks, HOOK1, HOOK2, HOOK3, Afflictions, Divine_Agony, XP, Advancements, Add_BLSPH, "
                                "Cat_Rating, Burst, Psyche, Kit_Points, Kit_Mod, Kit_Items, Agenda, Agenda_Items, Agenda_Abilities, Scrip, Blastphemy, "
                                "Sin_Marks, Observed_Power0, Observed_Power1, Observed_Power2, Observed_Power3, "
-                               "Observed_Power4, HOOK1_NAME, HOOK2_NAME, HOOK3_NAME, Visitation, Q1, Q2, Q3, Q4, Q5 FROM Exorcists WHERE CID = ?", (self.cid,))
+                               "Observed_Power4, HOOK1_NAME, HOOK2_NAME, HOOK3_NAME, Visitation, Q1, Q2, Q3, Q4, Q5, Living_Quarters, Private_Room, Relaxed_Grooming, Improved_Meals,"
+                               "Indulgences, Leave_Of_Absence, Inj_mod, Stress_Mod, Sin_Mod  FROM Exorcists WHERE CID = ?", (self.cid,))
                 result = cursor.fetchone()
                 if result is None:
                     await interaction.response.send_message("Character not found.", ephemeral=True)
@@ -938,7 +939,18 @@ class SheetView(discord.ui.View):
                 self.q3 = result[46]
                 self.q4 = result[47]
                 self.q5 = result[48]
-                self.max_stress = 6 - self.injuries
+                self.lq = int(result[49])
+                self.pr = int(result[50])
+                self.rg = int(result[51])
+                self.im = int(result[52])
+                self.ind = int(result[53])
+                self.loa = int(result[54])
+                self.injmod = int(result[55])
+                self.stmod = int(result[56])
+                self.simod = int(result[57])
+                self.max_sin = 10+self.simod
+                self.max_injury = 3 + self.injmod
+                self.max_stress = 6 + self.stmod
                 self.max_kit = 7 + self.kmod
                 self.max_psyche = math.ceil(2 + (self.crating / 2))
 
@@ -947,8 +959,13 @@ class SheetView(discord.ui.View):
                 filled = "■" * value
                 empty = "□" * (max_boxes - value)
                 return f"{filled} {empty}".strip()
+            
+            def get_inj_boxes(value, max_boxes=self.max_injury):
+                filled = "■" * value
+                empty = "□" * (max_boxes - value)
+                return f"{filled} {empty}".strip()
 
-            def get_stress_boxes(value, max_boxes=6):
+            def get_stress_boxes(value, max_boxes=self.max_stress):
                 filled = "■" * value
                 empty = "□" * (max_boxes - value - self.injuries)
                 return f"{filled} {empty}".strip()
@@ -958,7 +975,7 @@ class SheetView(discord.ui.View):
                 empty = "□" * (max_boxes - value)
                 return f"{filled} {empty}".strip()
 
-            def get_sin_boxes(value, max_boxes=10):
+            def get_sin_boxes(value, max_boxes=self.max_sin):
                 filled = "■" * value
                 empty = "□" * (max_boxes - value - self.total_sin_marks)
                 return f"{filled} {empty}".strip()
@@ -997,7 +1014,7 @@ class SheetView(discord.ui.View):
             self.embeds[0].clear_fields()
             self.embeds[0].add_field(name="", value=(
                 f"**Max stress:** {self.max_stress} {get_stress_boxes(self.stress)}\n"
-                f"**Total Injuries:** {get_skill_boxes(self.injuries)}\n"
+                f"**Total Injuries:** {get_inj_boxes(self.injuries)}\n"
                 f"**Current Sin:** {get_sin_boxes(self.sin)}\n"
                 f"**Sin Marks:** {self.total_sin_marks}\n"
                 f'**{self.hook1_name}:**\n {get_hook_boxes(self.hook1)}\n'
@@ -1099,7 +1116,8 @@ class ViewSheet(commands.Cog):
                                "Stress, Injuries, Sin, Total_Sin_Marks, HOOK1, HOOK2, HOOK3, Afflictions, Divine_Agony, XP, Advancements, Add_BLSPH, "
                                "Cat_Rating, Burst, Psyche, Kit_Points, Kit_Mod, Kit_Items, Agenda, Agenda_Items, Agenda_Abilities, Scrip, Blastphemy, "
                                "Sin_Marks, Observed_Power0, Observed_Power1, Observed_Power2, Observed_Power3, "
-                               "Observed_Power4, HOOK1_NAME, HOOK2_NAME, HOOK3_NAME, Visitation, Q1, Q2, Q3, Q4, Q5 FROM Exorcists WHERE CID = ?", (cid,))
+                               "Observed_Power4, HOOK1_NAME, HOOK2_NAME, HOOK3_NAME, Visitation, Q1, Q2, Q3, Q4, Q5, Living_Quarters, Private_Room, Relaxed_Grooming, Improved_Meals,"
+                               "Indulgences, Leave_Of_Absence, Inj_mod, Stress_Mod, Sin_Mod FROM Exorcists WHERE CID = ?", (cid,))
                 result = cursor.fetchone()
 
                 if not result:
@@ -1157,7 +1175,18 @@ class ViewSheet(commands.Cog):
                 self.q3 = result[46]
                 self.q4 = result[47]
                 self.q5 = result[48]
-                self.max_stress = 6 - self.injuries
+                self.lq = int(result[49])
+                self.pr = int(result[50])
+                self.rg = int(result[51])
+                self.im = int(result[52])
+                self.ind = int(result[53])
+                self.loa = int(result[54])
+                self.injmod = int(result[55])
+                self.stmod = int(result[56])
+                self.simod = int(result[57])
+                self.max_sin = 10+self.simod
+                self.max_injury = 3 + self.injmod
+                self.max_stress = 6 + self.stmod
                 self.max_kit = 7 + self.kmod
                 self.max_psyche = math.ceil(2 + (self.crating / 2))
 
@@ -1167,10 +1196,14 @@ class ViewSheet(commands.Cog):
                     filled = "■" * value
                     empty = "□" * (max_boxes - value)
                     return f"{filled} {empty}".strip()
+                
+                def get_inj_boxes(value, max_boxes=self.max_injury):
+                    filled = "■" * value
+                    empty = "□" * (max_boxes - value)
+                    return f"{filled} {empty}".strip()
 
 
-
-                def get_stress_boxes(value, max_boxes=6):
+                def get_stress_boxes(value, max_boxes=self.max_stress):
                     filled = "■" * value
                     empty = "□" * (max_boxes - value - self.injuries)
                     return f"{filled} {empty}".strip()
@@ -1184,7 +1217,7 @@ class ViewSheet(commands.Cog):
 
 
 
-                def get_sin_boxes(value, max_boxes=10):
+                def get_sin_boxes(value, max_boxes=self.max_sin):
                     filled = "■" * value
                     empty = "□" * (max_boxes - value - self.total_sin_marks - add_blsph)
                     return f"{filled} {empty}".strip()
@@ -1238,7 +1271,7 @@ class ViewSheet(commands.Cog):
                 sheet_embed1.set_image(url="attachment://image.png")
                 sheet_embed1.add_field(name="", value=(
                     f"**Max stress:** {self.max_stress} {get_stress_boxes(self.stress)}\n"
-                    f"**Total Injuries:** {get_skill_boxes(self.injuries)}\n"
+                    f"**Total Injuries:** {get_inj_boxes(self.injuries)}\n"
                     f"**Current Sin:** {get_sin_boxes(self.sin)}\n"
                     f"**Sin Marks:** {self.total_sin_marks}\n"
                     f'**{self.hook1_name}:**\n {get_hook_boxes(self.hook1)}\n'

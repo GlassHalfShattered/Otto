@@ -12,7 +12,7 @@ class RegisterExorcistModal(discord.ui.Modal):
     def __init__(self, db_path, title="RegisterExorcist"):
         super().__init__(title=title)
         self.db_path = db_path
-        self.name = discord.ui.TextInput(label="Name", placeholder="First And Lastt",required=True, max_length=14, style=discord.TextStyle.short)
+        self.name = discord.ui.TextInput(label="Name", placeholder="First And Last",required=True, max_length=14, style=discord.TextStyle.short)
         self.XID = discord.ui.TextInput(label="XID", placeholder="Format: X0NN (e.g, X012)",required=True, max_length=4, style=discord.TextStyle.short)
         self.AGNDA = discord.ui.TextInput(label="Agenda", placeholder="Enter your current agenda",required=True, max_length=12, style=discord.TextStyle.short)
         self.BLSPH = discord.ui.TextInput(label="Blastphemy", placeholder="Enter your current blastphemy",required=True, max_length=12, style=discord.TextStyle.short)
