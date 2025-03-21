@@ -73,7 +73,8 @@ class LeaderboardView(discord.ui.View):
 class LevelSys(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_path = "./config/db/level.db"
+        self.level_path = "./config/db/level.db"
+        self.polymarket_path = "./config/db/polymarket.db"
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -94,13 +95,13 @@ class LevelSys(commands.Cog):
             last_triggered = user_cooldowns[user_id]
             if current_time - last_triggered < COOLDOWN_TIME:
                 try: 
-                    with sqlite3.connect(self.db_path) as connection:
-                        cursor = connection.cursor()
-                        cursor.execute("SELECT Number_Of_Messages FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, user_id))
-                        result = cursor.fetchone()
+                    with sqlite3.connect(self.level_path) as level_connection:
+                        level_cursor = level_connection.cursor()
+                        level_cursor.execute("SELECT Number_Of_Messages FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, user_id))
+                        result = level_cursor.fetchone()
                         number_of_messages = result[0] + 1
-                        cursor.execute("UPDATE Users SET Number_Of_Messages = ? WHERE Guild_id = ? AND User_id = ?", (number_of_messages,guild_id, user_id))
-                        connection.commit()
+                        level_cursor.execute("UPDATE Users SET Number_Of_Messages = ? WHERE Guild_id = ? AND User_id = ?", (number_of_messages,guild_id, user_id))
+                        level_connection.commit()
                     return        
                 except Exception as e:
                     print(e)
@@ -108,10 +109,10 @@ class LevelSys(commands.Cog):
 
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
-                cursor = connection.cursor()
-                cursor.execute("SELECT * FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, user_id))
-                result = cursor.fetchone()
+            with sqlite3.connect(self.level_path) as level_connection:
+                level_cursor = level_connection.cursor()
+                level_cursor.execute("SELECT * FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, user_id))
+                result = level_cursor.fetchone()
 
                 if result is None:
                     cur_level = 0
@@ -119,35 +120,54 @@ class LevelSys(commands.Cog):
                     level_up_Xp = 100
                     username = message.author.name
                     number_of_messages = 1
-                    cursor.execute("INSERT INTO Users (Guild_id, User_id, Level, Xp, Level_Up_XP, Username, Number_Of_Messages) Values (?,?,?,?,?,?,?)",
+                    level_cursor.execute("INSERT INTO Users (Guild_id, User_id, Level, Xp, Level_Up_XP, Username, Number_Of_Messages) Values (?,?,?,?,?,?,?)",
                     (guild_id, user_id, cur_level, xp, level_up_Xp, username, number_of_messages))
                 else:
                     cur_level = result[2]
                     xp = result[3] + random.randint(10, 20)
                     level_up_xp = result[4]
                     number_of_messages = result[6] + 1
-                    cursor.execute("UPDATE Users SET Level = ?, Xp = ?, Level_Up_XP = ?, Number_Of_Messages = ?  WHERE Guild_id = ? AND User_Id = ?", 
+                    level_cursor.execute("UPDATE Users SET Level = ?, Xp = ?, Level_Up_XP = ?, Number_Of_Messages = ?  WHERE Guild_id = ? AND User_Id = ?", 
                     (cur_level, xp, level_up_xp, number_of_messages, guild_id, user_id))
                     if xp >= level_up_xp:
                         cur_level += 1
                         level_up_xp = math.ceil(50 *cur_level ** 2 + 100 * cur_level + 50)
                         await message.channel.send(f"{message.author.mention} has leveled up to level {cur_level}!")
                         
-                        cursor.execute("UPDATE Users SET Level = ?, Xp = ?, Level_Up_XP = ? WHERE Guild_id = ? AND User_Id = ?", (cur_level, xp, level_up_xp, guild_id, user_id))
-                connection.commit()        
+                        level_cursor.execute("UPDATE Users SET Level = ?, Xp = ?, Level_Up_XP = ? WHERE Guild_id = ? AND User_Id = ?", (cur_level, xp, level_up_xp, guild_id, user_id))
+                level_connection.commit()        
 
         except Exception as e:
             print(f"Database error: {e}")
+        try:
+            with sqlite3.connect(self.polymarket_path) as poly_connection:
+                poly_cursor = poly_connection.cursor()
+                poly_cursor.execute("SELECT BetterBucks FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, user_id))
+                result = poly_cursor.fetchone()
+
+                if result is None:
+                    bucks = float(1000)
+                    username = message.author.name
+                    poly_cursor.execute("INSERT INTO Users (Guild_id, User_id, BetterBucks, User_Name) Values (?,?,?,?)",
+                    (guild_id, user_id, bucks, username))
+                else:
+                    bucks = float(result[0]) + random.randint(10, 20)
+                    poly_cursor.execute("UPDATE Users SET BetterBucks = ? WHERE Guild_id = ? AND User_Id = ?", 
+                    (bucks, guild_id, user_id)) 
+                poly_connection.commit()        
+
+        except Exception as e:
+            print(f"polymarket error: {e}")
 
     @app_commands.command(name="stats")
     async def stats(self, interaction: discord.Interaction):
         member_id = interaction.user.id
         guild_id = interaction.guild.id
-        with sqlite3.connect(self.db_path) as connection:
+        with sqlite3.connect(self.level_path) as level_connection:
 
-            cursor = connection.cursor()
-            cursor.execute("SELECT * FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, member_id))
-            result = cursor.fetchone()
+            level_cursor = level_connection.cursor()
+            level_cursor.execute("SELECT * FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, member_id))
+            result = level_cursor.fetchone()
 
         level = result[2]
         xp = result[3]
@@ -162,19 +182,19 @@ class LevelSys(commands.Cog):
 
         level_embed.set_footer(text=f"Requested by {interaction.user.name}.", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         await interaction.response.send_message(embed=level_embed)
-        connection.commit()
+        level_connection.commit()
 
         
     @app_commands.command(name="export", description="Download a CSV file of server activity data")      
     async def export(self, interaction: discord.Interaction):
         try:
-            with sqlite3.connect(self.db_path) as connection:
-                    cursor = connection.cursor()
-                    cursor.execute(
+            with sqlite3.connect(self.level_path) as level_connection:
+                    level_cursor = level_connection.cursor()
+                    level_cursor.execute(
                         "SELECT User_id, Level, Xp, Level_Up_Xp, Username, Number_Of_Messages FROM Users WHERE Guild_id = ? ORDER BY Level DESC, Xp DESC",
                         (interaction.guild_id,)
                     )
-                    results = cursor.fetchall()
+                    results = level_cursor.fetchall()
                     fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"]
                     data = [dict(zip(fieldnames, row)) for row in results]
 
@@ -199,13 +219,13 @@ class LevelSys(commands.Cog):
         guild_id = interaction.guild.id
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
-                cursor = connection.cursor()
-                cursor.execute(
+            with sqlite3.connect(self.level_path) as level_connection:
+                level_cursor = level_connection.cursor()
+                level_cursor.execute(
                     "SELECT User_id, Level, Xp FROM Users WHERE Guild_id = ? ORDER BY Level DESC, Xp DESC",
                     (guild_id,)
                 )
-                results = cursor.fetchall()
+                results = level_cursor.fetchall()
 
             if not results:
                 await interaction.response.send_message("No one has started leveling in this server yet!")
@@ -224,7 +244,7 @@ class LevelSys(commands.Cog):
                    
 
         
-        connection.commit()
+        level_connection.commit()
 
 async def setup(bot):
     await bot.add_cog(LevelSys(bot), guilds=[GUILD_ID])

@@ -1,9 +1,9 @@
 #!/bin/bash
 mkdir -p /app/config/db ./config/images
 # Initialize Exorcists.db
-if [ ! -f /config/db/Exorcists.db ]; then
-    touch /app/config/db/Exorcists.db
-sqlite3 /app/config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
+if [ ! -f ./config/db/Exorcists.db ]; then
+    touch ./config/db/Exorcists.db
+sqlite3 ./config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT DEFAULT '0',
     XID TEXT DEFAULT '0',
@@ -79,10 +79,44 @@ sqlite3 /app/config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
     );"
 fi
 # Initialize level.db
-if [ ! -f /config/db/level.db ]; then
-    touch /app/config/db/level.db
-    sqlite3 /app/config/db/level.db "CREATE TABLE IF NOT EXISTS Users (Guild_id INTEGER, User_id INTEGER, Level INTEGER, Xp INTEGER, Level_Up_XP INTEGER, Username TEXT, 
-    Number_Of_Messages INTEGER, PRIMARY KEY (Guild_id, User_id))"
+if [ ! -f ./config/db/level.db ]; then
+    touch ./config/db/level.db
+    sqlite3 ./config/db/level.db "CREATE TABLE IF NOT EXISTS Users 
+    (Guild_id INTEGER, 
+    User_id INTEGER, 
+    Level INTEGER, 
+    Xp INTEGER, 
+    Level_Up_XP INTEGER, 
+    Username TEXT, 
+    Number_Of_Messages INTEGER, 
+    PRIMARY KEY (Guild_id, User_id))"
 
+fi
+# Initialize polymarket.db
+if [ ! -f ./config/db/polymarket.db ]; then
+    touch ./config/db/polymarket.db
+    sqlite3 ./config/db/polymarket.db "CREATE TABLE IF NOT EXISTS Transactions (
+        Id INTEGER PRIMARY KEY,
+        Date TEXT NOT NULL,
+        Shares_Purchased REAL NOT NULL,
+        Event TEXT NOT NULL,
+        Resolve_Date TEXT NOT NULL,
+        User_id TEXT NOT NULL,
+        BetterBucks_Spent REAL NOT NULL,
+        BetterBucks_Before REAL NOT NULL,
+        BetterBucks_After REAL NOT NULL,
+        Question TEXT NOT NULL,
+        Answer TEXT NOT NULL,
+        Resolved TEXT DEFAULT 'NO',
+        Win TEXT
+    );" || { echo "Error creating Transactions table"; exit 1; }
+    sqlite3 ./config/db/polymarket.db "CREATE TABLE IF NOT EXISTS Users (
+        Id INTEGER PRIMARY KEY,
+        BetterBucks REAL NOT NULL,
+        Guild_id TEXT NOT NULL,
+        User_id TEXT NOT NULL,
+        User_Name TEXT
+    );" || { echo "Error creating Users table"; exit 1; }
+    echo "polymarket.db initialized successfully"
 fi
 exec python3 /app/main.py
