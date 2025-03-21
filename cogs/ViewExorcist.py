@@ -212,9 +212,24 @@ class SkillAdjustView(discord.ui.View):
                     print(e)
 
 
-
+class add_sin_marks(discord.ui.Modal, title="Add Sin Marks"):
+    def __init__(self, parent_view: 'SheetView'):
+        super().__init__()
+        self.parent_view = parent_view
+        with sqlite3.connect(self.parent_view.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Sin_Marks FROM Exorcists WHERE CID = ?", (self.parent_view.cid,))
+                result = cursor.fetchone()
+                curr_sin = result[0] if result else "None"
+        self.sin_marks = discord.ui.TextInput(label="Sin_Marks", placeholder="Update Sin_Marks",style=discord.TextStyle.paragraph, default=curr_sin)
+        self.add_item(self.sin_marks)
         
-
+    async def on_submit(self, interaction: discord.Interaction):
+        with sqlite3.connect(self.parent_view.db_path) as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE Exorcists SET Sin_Marks = ? WHERE CID = ?", (self.sin_marks.value, self.parent_view.cid))
+            connection.commit()
+        await self.parent_view.refresh_embeds(interaction, self.parent_view.stress)
 
 
 class SheetView(discord.ui.View):
@@ -252,6 +267,20 @@ class SheetView(discord.ui.View):
         self.visrights = 0
         self.total_sin_marks = 0
         self.max_psyche = 0
+        self.q1 = 0
+        self.q2 = 0
+        self.q3 = 0
+        self.q4 = 0
+        self.q5 = 0
+        self.lq = 0
+        self.pr = 0
+        self.rg = 0
+        self.im = 0
+        self.ind = 0
+        self.loa = 0
+        self.injmod = 0
+        self.stmod = 0
+        self.simod = 0
         self.setup_buttons()  # Initial setup for page 0
 
     def setup_buttons(self):
@@ -281,11 +310,21 @@ class SheetView(discord.ui.View):
         elif self.current_page == 2: # Third page buttons
             self.add_item(discord.ui.Button(label="Update Powers", style=discord.ButtonStyle.blurple, custom_id="update_powers"))
         elif self.current_page == 4: # Fith page buttons
+            self.add_item(discord.ui.Button(label="Update Sin Marks", style=discord.ButtonStyle.red, custom_id="sin_marks"))
             self.add_item(discord.ui.Button(label="Increase CAT", style=discord.ButtonStyle.green, custom_id="cat_plus"))
             self.add_item(discord.ui.Button(label="Increase Kit Modifier", style=discord.ButtonStyle.green, custom_id="kitmod_plus"))
             self.add_item(discord.ui.Button(label="Spend Scrip", style=discord.ButtonStyle.green, custom_id="scrip_minus"))
             self.add_item(discord.ui.Button(label="Gain Scrip", style=discord.ButtonStyle.green, custom_id="scrip_plus"))
-            self.add_item(discord.ui.Button(label="Gain Visitation Rights", style=discord.ButtonStyle.green, custom_id="visitation"))
+            self.add_item(discord.ui.Button(label="Gain Visitation Rights 12$", style=discord.ButtonStyle.green, custom_id="visitation"))
+            self.add_item(discord.ui.Button(label="Gain Living Quarters Expansion 6$", style=discord.ButtonStyle.green, custom_id="living"))
+            self.add_item(discord.ui.Button(label="Gain Relaxed Grooming Guidelines 6$", style=discord.ButtonStyle.green, custom_id="grooming"))
+            self.add_item(discord.ui.Button(label="Gain Improved Meal Plan 4$", style=discord.ButtonStyle.green, custom_id="meal"))
+            self.add_item(discord.ui.Button(label="Gain Leave Of Absence 15$", style=discord.ButtonStyle.green, custom_id="leave"))
+            self.add_item(discord.ui.Button(label="Gain Sanctioned Indulgences 1$", style=discord.ButtonStyle.green, custom_id="indulge"))
+            self.add_item(discord.ui.Button(label="Gain Private Room 8$, Cat 3+ Required", style=discord.ButtonStyle.green, custom_id="room"))
+
+
+
  
 
 
@@ -356,9 +395,26 @@ class SheetView(discord.ui.View):
         elif custom_id == "scrip_plus":
             await self.scrip_plus(interaction)
         elif custom_id == "visitation":
-            await self.visitation_plus(interaction)
+            try:
+             await self.visitation_plus(interaction)
+            except Exception as e:
+                print(e)
+        elif custom_id == "living":
+            await self.living_plus(interaction)
+        elif custom_id == "grooming":
+            await self.grooming_plus(interaction)
+        elif custom_id == "meal":
+            await self.meal_plus(interaction)
+        elif custom_id == "leave":
+            await self.leave_plus(interaction)
+        elif custom_id == "indulge":
+            await self.indulge_plus(interaction)
+        elif custom_id == "room":
+            await self.room_plus(interaction)
         elif custom_id == "kitmod_plus":
             await self.kitmod_plus(interaction)
+        elif custom_id == "sin_marks":
+            await self.show_sinmarks(interaction)
 
         return True  # Allow the interaction to proceed
 
@@ -595,6 +651,14 @@ class SheetView(discord.ui.View):
         except Exception as e:
             print(f"Error in afflictions: {e}")
 
+
+    async def show_sinmarks(self, interaction: discord.Interaction):
+        try:
+            modal = add_sin_marks(parent_view=self)
+            await interaction.response.send_modal(modal)
+        except Exception as e:
+            print(f"Error in add_sin_marks: {e}")
+
     async def show_gear(self, interaction: discord.Interaction):
         try:
             modal = Registered_Kit(parent_view=self)
@@ -822,17 +886,160 @@ class SheetView(discord.ui.View):
                 if result is None:
                     await interaction.response.send_message("Character not found.", ephemeral=True)
                     return
-                current_visitation = int(result[0])
+                current_visitation = result[0]
                 current_scrip = int(result[1])
 
-                if current_scrip >= 12 and current_visitation == 0:
-                    new_visitation = current_visitation + 1
+                if current_scrip >= 12 and current_visitation == '0':
+                    new_visitation = 'Yes'
+                    self.injmod = 1
                     new_scrip = current_scrip - 12
-                    cursor.execute("UPDATE Exorcists SET Visitation = ?, Scrip = ? WHERE CID = ?", (new_visitation, new_scrip, self.cid))
+                    cursor.execute("UPDATE Exorcists SET Visitation = ?, Inj_mod = ?, Scrip = ? WHERE CID = ?", (new_visitation,self.injmod, new_scrip, self.cid))
                     connection.commit()
                     await self.refresh_embeds(interaction, self.stress)
         except Exception as e:
             print(f"visitation increase error: {e}")
+
+    async def living_plus(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Living_Quarters, Scrip FROM Exorcists WHERE CID = ?", (self.cid,))
+                result = cursor.fetchone()
+                if result is None:
+                    await interaction.response.send_message("Character not found.", ephemeral=True)
+                    return
+                current_lq = result[0]
+                current_scrip = int(result[1])
+
+                if current_scrip >= 6 and current_lq == '0':
+                    new_lq = 'Yes'
+                    new_scrip = current_scrip - 6
+                    cursor.execute("UPDATE Exorcists SET Living_Quarters = ?, Scrip = ? WHERE CID = ?", (new_lq, new_scrip, self.cid))
+                    connection.commit()
+                    await self.refresh_embeds(interaction, self.stress)
+        except Exception as e:
+            print(f"Living Quarters increase error: {e}")
+
+    async def room_plus(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Private_Room, Scrip, Stress_Mod, Cat_Rating FROM Exorcists WHERE CID = ?", (self.cid,))
+                result = cursor.fetchone()
+                if result is None:
+                    await interaction.response.send_message("Character not found.", ephemeral=True)
+                    return
+                current_pr = result[0]
+                current_scrip = int(result[1])
+                current_stmod = int(result[2])
+                current_cat = int(result[3])
+
+                if current_scrip >= 8 and current_pr == '0' and current_cat >= 3:
+                    new_pr = 'Yes'
+                    new_stmod = current_stmod + 1
+                    new_scrip = current_scrip - 8
+                    cursor.execute("UPDATE Exorcists SET Private_Room = ?, Stress_Mod = ?, Scrip = ? WHERE CID = ?", (new_pr,new_stmod, new_scrip, self.cid))
+                    connection.commit()
+                    await self.refresh_embeds(interaction, self.stress)
+
+        except Exception as e:
+            print(f"Private Room increase error: {e}")
+
+    async def grooming_plus(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Relaxed_Grooming, Scrip, Sin_Mod FROM Exorcists WHERE CID = ?", (self.cid,))
+                result = cursor.fetchone()
+                if result is None:
+                    await interaction.response.send_message("Character not found.", ephemeral=True)
+                    return
+                current_grooming = result[0]
+                current_scrip = int(result[1])
+                current_simod = int(result[2])
+
+                if current_scrip >= 6 and current_grooming == '0':
+                    new_grooming = 'Yes'
+                    new_simod = current_simod + 1
+                    new_scrip = current_scrip - 6
+                    cursor.execute("UPDATE Exorcists SET Relaxed_Grooming = ?, Sin_Mod = ?, Scrip = ? WHERE CID = ?", (new_grooming,new_simod, new_scrip, self.cid))
+                    connection.commit()
+                    await self.refresh_embeds(interaction, self.stress)
+        except Exception as e:
+            print(f"Grooming increase error: {e}")
+
+    async def meal_plus(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Improved_Meals, Scrip, Kit_Mod FROM Exorcists WHERE CID = ?", (self.cid,))
+                result = cursor.fetchone()
+                if result is None:
+                    await interaction.response.send_message("Character not found.", ephemeral=True)
+                    return
+                current_meal = result[0]
+                current_scrip = int(result[1])
+                current_kmod = int(result[2])
+                if current_scrip >= 4 and current_meal == '0':
+                    new_meal = 'Yes'
+                    new_kmod = current_kmod + 1
+                    new_scrip = current_scrip - 4
+                    cursor.execute("UPDATE Exorcists SET Improved_Meals = ?, Kit_Mod = ?, Scrip = ? WHERE CID = ?", (new_meal,new_kmod, new_scrip, self.cid))
+                    connection.commit()
+                    await self.refresh_embeds(interaction, self.stress)
+        except Exception as e:
+            print(f"meal increase error: {e}")
+
+    async def leave_plus(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Leave_Of_Absence, Scrip, Kit_Mod, Sin_Mod, Stress_Mod FROM Exorcists WHERE CID = ?", (self.cid,))
+                result = cursor.fetchone()
+                if result is None:
+                    await interaction.response.send_message("Character not found.", ephemeral=True)
+                    return
+                current_leave = result[0]
+                current_scrip = int(result[1])
+                current_kmod = int(result[2])
+                current_simod = int(result[3])
+                current_stmod = int(result[4])
+
+                if current_scrip >= 15 and current_leave == '0':
+                    new_leave = 'Yes'
+                    new_kmod = current_kmod + 1
+                    new_simod = current_simod + 1
+                    new_stmod = current_stmod + 1
+                    new_scrip = current_scrip - 15
+                    cursor.execute("UPDATE Exorcists SET Leave_Of_Absence = ?, Kit_Mod = ?, Sin_Mod = ?, Stress_Mod = ?, Scrip = ? WHERE CID = ?", (new_leave,new_kmod,new_simod,new_stmod, new_scrip, self.cid))
+                    connection.commit()
+                    await self.refresh_embeds(interaction, self.stress)
+        except Exception as e:
+            print(f"Leave increase error: {e}")
+
+    
+
+    async def indulge_plus(self, interaction: discord.Interaction):
+        try:
+            with sqlite3.connect(self.db_path) as connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT Indulgences, Scrip FROM Exorcists WHERE CID = ?", (self.cid,))
+                result = cursor.fetchone()
+                if result is None:
+                    await interaction.response.send_message("Character not found.", ephemeral=True)
+                    return
+                current_indulgences = int(result[0])
+                current_scrip = int(result[1])
+
+                if current_scrip >= 1:
+                    new_indulgences = current_indulgences + 1
+                    new_scrip = current_scrip - 1
+                    cursor.execute("UPDATE Exorcists SET Indulgences = ?, Scrip = ? WHERE CID = ?", (new_indulgences, new_scrip, self.cid))
+                    connection.commit()
+                    await self.refresh_embeds(interaction, self.stress)
+        except Exception as e:
+            print(f"Indulgences increase error: {e}")
+
 
     async def kitmod_plus(self, interaction: discord.Interaction):
         try:
@@ -939,12 +1146,12 @@ class SheetView(discord.ui.View):
                 self.q3 = result[46]
                 self.q4 = result[47]
                 self.q5 = result[48]
-                self.lq = int(result[49])
-                self.pr = int(result[50])
-                self.rg = int(result[51])
-                self.im = int(result[52])
-                self.ind = int(result[53])
-                self.loa = int(result[54])
+                self.lq = result[49]
+                self.pr = result[50]
+                self.rg = result[51]
+                self.im = result[52]
+                self.ind = result[53]
+                self.loa = result[54]
                 self.injmod = int(result[55])
                 self.stmod = int(result[56])
                 self.simod = int(result[57])
@@ -1076,11 +1283,17 @@ class SheetView(discord.ui.View):
                 ))
             # Update page 5
             self.embeds[4].clear_fields()
-            self.embeds[4].add_field(name="Misc info: ", 
-                        value=(f"**Kit Point Modifier:** {self.kmod}\n"
-                        f"**Visitation Rights:**\n {self.visrights}\n"
-                        f"**Scrip:** {self.scrip}\n"))
-
+            self.embeds[4].add_field(name="Misc info: ", value=
+                    f"**Kit Point Modifier:** {self.kmod}\n"
+                    f"**Visitation Rights:** {self.visrights}\n"
+                    f"**Living Quarter Expansion:** {self.lq}\n"
+                    f"**Private Room:** {self.pr}\n"
+                    f"**Improved Meal Plan:** {self.im}\n"
+                    f"**Leave Of Absense:** {self.loa}\n"
+                    f"**Relaxed Grooming Guildlines:** {self.rg}\n"
+                    f"**Sanctioned Indulgences:** {self.ind}\n"
+                    f"**Scrip:** {self.scrip}\n"
+            )
 
             
 
@@ -1175,12 +1388,12 @@ class ViewSheet(commands.Cog):
                 self.q3 = result[46]
                 self.q4 = result[47]
                 self.q5 = result[48]
-                self.lq = int(result[49])
-                self.pr = int(result[50])
-                self.rg = int(result[51])
-                self.im = int(result[52])
-                self.ind = int(result[53])
-                self.loa = int(result[54])
+                self.lq = result[49]
+                self.pr = result[50]
+                self.rg = result[51]
+                self.im = result[52]
+                self.ind = result[53]
+                self.loa = result[54]
                 self.injmod = int(result[55])
                 self.stmod = int(result[56])
                 self.simod = int(result[57])
@@ -1355,7 +1568,13 @@ class ViewSheet(commands.Cog):
                 sheet_embed5.set_image(url="attachment://image.png")
                 sheet_embed5.add_field(name="Misc info: ", value=(
                     f"**Kit Point Modifier:** {self.kmod}\n"
-                    f"**Visitation Rights:**\n {self.visrights}\n"
+                    f"**Visitation Rights:** {self.visrights}\n"
+                    f"**Living Quarter Expansion:** {self.lq}\n"
+                    f"**Private Room:** {self.pr}\n"
+                    f"**Improved Meal Plan:** {self.im}\n"
+                    f"**Leave Of Absense:** {self.loa}\n"
+                    f"**Relaxed Grooming Guildlines:** {self.rg}\n"
+                    f"**Sanctioned Indulgences:** {self.ind}\n"
                     f"**Scrip:** {self.scrip}\n"
 
                 ))
@@ -1363,11 +1582,13 @@ class ViewSheet(commands.Cog):
                 embeds.append(sheet_embed5)
                 view = SheetView(embeds, interaction, cid, self.db_path)
                 view.message = await interaction.user.send(file=file, embed=embeds[0].set_footer(text="Page 1 of 5"), view=view)
+                await interaction.response.send_message('Character sheet sent to Dms', ephemeral=True)
+
 
         except Exception as e:
             print(e)
             await interaction.response.send_message(f"An error occurred: {e}", ephemeral=True)
-            await interaction.response.defer()
+
 
 async def setup(bot):
     await bot.add_cog(ViewSheet(bot), guilds=[GUILD_ID])
