@@ -1,9 +1,9 @@
 #!/bin/bash
 mkdir -p /app/config/db ./config/images
 # Initialize Exorcists.db
-if [ ! -f /config/db/Exorcists.db ]; then
-    touch /config/db/Exorcists.db
-sqlite3 /config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
+if [ ! -f ./config/db/Exorcists.db ]; then
+    touch ./config/db/Exorcists.db
+sqlite3 ./config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT DEFAULT '0',
     XID TEXT DEFAULT '0',
@@ -79,9 +79,9 @@ sqlite3 /config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
     );"
 fi
 # Initialize level.db
-if [ ! -f /config/db/level.db ]; then
-    touch /config/db/level.db
-    sqlite3 /config/db/level.db "CREATE TABLE IF NOT EXISTS Users 
+if [ ! -f ./config/db/level.db ]; then
+    touch ./config/db/level.db
+    sqlite3 ./config/db/level.db "CREATE TABLE IF NOT EXISTS Users 
     (Guild_id INTEGER, 
     User_id INTEGER, 
     Level INTEGER, 
@@ -93,9 +93,9 @@ if [ ! -f /config/db/level.db ]; then
 
 fi
 # Initialize polymarket.db
-if [ ! -f /config/db/Polymarket.db ]; then
-    touch /config/db/Polymarket.db
-    sqlite3 /config/db/Polymarket.db "CREATE TABLE IF NOT EXISTS Transactions (
+if [ ! -f ./config/db/polymarket.db ]; then
+    touch ./config/db/polymarket.db
+    sqlite3 ./config/db/polymarket.db "CREATE TABLE IF NOT EXISTS Transactions (
         Id INTEGER PRIMARY KEY,
         Date TEXT NOT NULL,
         Shares_Purchased REAL NOT NULL,
@@ -110,13 +110,13 @@ if [ ! -f /config/db/Polymarket.db ]; then
         Resolved TEXT DEFAULT 'NO',
         Win TEXT
     );" || { echo "Error creating Transactions table"; exit 1; }
-    sqlite3 /config/db/Polymarket.db "CREATE TABLE IF NOT EXISTS Users (
+    sqlite3 ./config/db/polymarket.db "CREATE TABLE IF NOT EXISTS Users (
         Id INTEGER PRIMARY KEY,
         BetterBucks REAL NOT NULL,
         Guild_id TEXT NOT NULL,
         User_id TEXT NOT NULL,
         User_Name TEXT
     );" || { echo "Error creating Users table"; exit 1; }
-    echo "Polymarket.db initialized successfully"
+    echo "polymarket.db initialized successfully"
 fi
 exec python3 /app/main.py

@@ -47,7 +47,7 @@ class Buy_yes(discord.ui.Modal, title="Buy Yes"):
                         "(BetterBucks_Before, "
                         "BetterBucks_Spent, "
                         "Shares_Purchased, "
-                        "User, "
+                        "User_id, "
                         "Event, "
                         "Question, "
                         "Answer, "
@@ -90,7 +90,7 @@ class Buy_no(discord.ui.Modal, title="Buy No"):
             )
             self.add_item(self.buy_no)
         except Exception as e:
-            print(f"Error in Buy_yes init: {e}")
+            print(f"Error in Buy_no init: {e}")
 
     async def on_submit(self, interaction: discord.Interaction):
         try:    
@@ -107,7 +107,7 @@ class Buy_no(discord.ui.Modal, title="Buy No"):
                         "(BetterBucks_Before, "
                         "BetterBucks_Spent, "
                         "Shares_Purchased, "
-                        "User, "
+                        "User_id, "
                         "Event, "
                         "Question, "
                         "Answer, "
@@ -120,7 +120,7 @@ class Buy_no(discord.ui.Modal, title="Buy No"):
                         (new_bb, self.parent_view.member_id, self.parent_view.guild_id))
 
                         connection.commit()
-                        await interaction.response.send_message(f"Bet placed: ${bb_spent} on Yes at {self.no_price}. Bet will resolve on {self.parent_view.end_date}.")
+                        await interaction.response.send_message(f"Bet placed: ${bb_spent} on No at {self.no_price}. Bet will resolve on {self.parent_view.end_date}.")
                 if new_bb < 0:
                     await interaction.response.send_message("You don't have enough BetterBucks for that. Are you poor?", ephemeral=True)
         except Exception as e:
@@ -176,7 +176,7 @@ class PaginatedView(discord.ui.View):
 class Polymarket(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_path = "./config/db/Polymarket.db"
+        self.db_path = "./config/db/polymarket.db"
 
     @commands.Cog.listener()
     async def on_ready(self):

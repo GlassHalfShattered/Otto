@@ -16,7 +16,7 @@ class Betcheck(commands.Cog):
     def __init__(self, bot):
         load_dotenv()
         self.bot = bot
-        self.db_path = "./config/db/Polymarket.db"
+        self.db_path = "./config/db/polymarket.db"
         self.channel = int(os.getenv('CHANNEL_ID'))
     @commands.Cog.listener()
     async def on_ready(self):
