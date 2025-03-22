@@ -7,8 +7,11 @@ import math
 import random
 from main import GUILD_ID
 import time
+from datetime import datetime
 import csv
 import io
+import datetime
+
 
 
 user_cooldowns = {}
@@ -158,59 +161,78 @@ class LevelSys(commands.Cog):
 
         except Exception as e:
             print(f"polymarket error: {e}")
+    
+
 
     @app_commands.command(name="stats")
     async def stats(self, interaction: discord.Interaction):
         member_id = interaction.user.id
         guild_id = interaction.guild.id
-        with sqlite3.connect(self.level_path) as level_connection:
-
-            level_cursor = level_connection.cursor()
-            level_cursor.execute("SELECT * FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, member_id))
-            result = level_cursor.fetchone()
-
-        level = result[2]
-        xp = result[3]
-        level_up_xp = result[4]
-        number_of_messages = result[6]
-
-        level_embed = discord.Embed(title='stats', description="User's level", color=discord.Color.blue())
-        level_embed.add_field(name=f"{interaction.user.name}'s total XP: ", value=f"{xp}", inline=False)
-        level_embed.add_field(name=f"{interaction.user.name}'s level: ", value=f"{level}", inline=False)
-        level_embed.add_field(name=f"{interaction.user.name}'s next level up: ", value=f"{level_up_xp}", inline=False)
-        level_embed.add_field(name=f"{interaction.user.name}'total message count: ", value=f"{number_of_messages}", inline=False)
-
-        level_embed.set_footer(text=f"Requested by {interaction.user.name}.", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
-        await interaction.response.send_message(embed=level_embed)
-        level_connection.commit()
-
-        
-    @app_commands.command(name="export", description="Download a CSV file of server activity data")      
-    async def export(self, interaction: discord.Interaction):
         try:
             with sqlite3.connect(self.level_path) as level_connection:
-                    level_cursor = level_connection.cursor()
-                    level_cursor.execute(
-                        "SELECT User_id, Level, Xp, Level_Up_Xp, Username, Number_Of_Messages FROM Users WHERE Guild_id = ? ORDER BY Level DESC, Xp DESC",
-                        (interaction.guild_id,)
-                    )
-                    results = level_cursor.fetchall()
-                    fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"]
-                    data = [dict(zip(fieldnames, row)) for row in results]
+                level_cursor = level_connection.cursor()
+                level_cursor.execute("SELECT * FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, member_id))
+                level_result = level_cursor.fetchone()
+            with sqlite3.connect(self.polymarket_path) as poly_connection:
+                poly_cursor = poly_connection.cursor()
+                poly_cursor.execute("SELECT BetterBucks FROM Users WHERE Guild_id = ? AND User_id = ?", (guild_id, member_id))
+                user_poly_result = poly_cursor.fetchone()
+            with sqlite3.connect(self.polymarket_path) as poly_connection:
+                poly_cursor = poly_connection.cursor()
+                poly_cursor.execute("SELECT Question, Shares_Purchased, Resolve_Date FROM Transactions WHERE User_id = ? AND Resolved = 'NO'", (member_id,))
+                trans_poly_result = poly_cursor.fetchall()
+                trans_poly_result.sort(key=lambda x: x[2] if x[2] and 'T' in x[2] else '9999-12-31')
+            level = level_result[2]
+            xp = level_result[3]
+            level_up_xp = level_result[4]
+            number_of_messages = level_result[6]
+            curr_bb = user_poly_result[0]
 
-
-            output = io.StringIO()
-            writer = csv.DictWriter(output, fieldnames=["User_id", "Level", "Xp", "Level_Up_Xp", "Username", "Number_Of_Messages"])
+            stats_embed = discord.Embed(title='stats', description="User's stats", color=discord.Color.blue())
+            stats_embed.add_field(name=f"{interaction.user.name}'s total XP: ", value=f"{xp}", inline=True)
+            stats_embed.add_field(name=f"{interaction.user.name}'s level: ", value=f"{level}", inline=True)
+            stats_embed.add_field(name=f"{interaction.user.name}'s next level up: ", value=f"{level_up_xp}", inline=True)
+            stats_embed.add_field(name=f"{interaction.user.name}'total message count: ", value=f"{number_of_messages}", inline=True)
+            stats_embed.add_field(name=f"{interaction.user.name}'BetterBuck Balance: ", value=f"${curr_bb}", inline=True)
             
-            writer.writeheader()
-            writer.writerows(data)
+            if not trans_poly_result:
+                bets_text = "No upcoming bets."
+            else:
+                bets = []
+                total_length = 0
+                separator = "\n\n"
+                max_length = 900 - len(" (...and more)")
+                for question, shares, date in trans_poly_result:
+                    if date and 'T' in date:
+                        resolve_date = date.split('T')[0]
+                    else:
+                        resolve_date = date or "N/A"
+                    bet =f'{question} - {round(shares,2)} Resolves: {resolve_date}'
+                    bet_length = len(bet)
+                    if bets:
+                        next_length = total_length + len(separator)
+                    else: 
+                        next_length = bet_length
 
-            output.seek(0)
-            csv_file = discord.File(fp=output, filename="exported_data.csv")
-            await interaction.response.send_message("Here’s your CSV file!", file=csv_file, ephemeral= True)
-            output.close()
+
+                    if next_length < max_length:
+                        bets.append(bet)
+                        total_length = next_length if not bets[1:] else total_length + len(separator) + bet_length
+                    else:
+                        break
+            bets_text = separator.join(bets)
+            if len(trans_poly_result) > len(bets):
+                bets_text += " (...and more)"
+
+            stats_embed.add_field(name=f"{interaction.user.name}'Upcoming Bets: ", value=f"{bets_text}", inline=False)
+
+
+            stats_embed.set_footer(text=f"Requested by {interaction.user.name}.", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
+            await interaction.response.send_message(embed=stats_embed)
         except Exception as e:
-            print(e)
+            print(f'Error with stats command{e}')
+        
+
 
 
             
