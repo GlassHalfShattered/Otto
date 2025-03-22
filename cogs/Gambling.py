@@ -183,13 +183,13 @@ class Polymarket(commands.Cog):
         print(f'{__name__} is online')
 
     @app_commands.command(name="polymarket", description="View spread of a specific market and place a bet")
-    async def polymarket(self, interaction: discord.Interaction, event_title: str):
+    async def polymarket(self, interaction: discord.Interaction, url : str):
         await interaction.response.defer()
         self.member_id = interaction.user.id
         self.guild_id = interaction.guild.id
-
+        slug = url.split("event/")[1].split("?tid")[0]
         r = requests.get(
-            "https://gamma-api.polymarket.com/events?limit=1000&active=true&closed=false&order=liquidity&ascending=false",
+            f"https://gamma-api.polymarket.com/events?limit=1000&active=true&slug={slug.lower()}&closed=false&order=liquidity&ascending=false",
             timeout=60
         )
         print(f"Status Code: {r.status_code}")
@@ -199,7 +199,7 @@ class Polymarket(commands.Cog):
         self.end_date = "N/A"
 
         for self.event in response:
-            if self.event['title'].lower() == event_title.lower():
+            if self.event['slug'].lower() == slug.lower():
                 for i, market in enumerate(self.event['markets'], 1):
                     question = market.get('question', 'N/A')
                     outcome_prices_str = market.get('outcomePrices', '["N/A", "N/A"]')
@@ -230,7 +230,7 @@ class Polymarket(commands.Cog):
 
                 break
         else:
-            await interaction.followup.send(f"No active event found with the title '{event_title}'.", ephemeral=True)
+            await interaction.followup.send(f"No active event found with the title '{slug}'.", ephemeral=True)
             return
 
         if not embed_data:

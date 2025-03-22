@@ -21,7 +21,7 @@ class Betcheck(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'{__name__} is online')
-        self.cron = aiocron.crontab('0 3 * * *', func=self.check_bets, start=True)
+        self.cron = aiocron.crontab('0 9 * * *', func=self.check_bets, start=True)
 
     async def check_bets(self,):
         current_date = date.today()
@@ -36,7 +36,6 @@ class Betcheck(commands.Cog):
                 cursor = connection.cursor()
                 cursor.execute("SELECT Event, User_id, Question, Shares_Purchased, Answer FROM transactions WHERE Resolve_date < CURRENT_DATE AND Resolved = 'NO'")
                 result = cursor.fetchall()
-                cursor.execute("UPDATE transactions SET Resolved = 'YES' WHERE Resolve_date < CURRENT_DATE")
                 sql_events = [row[0] for row in result]
                 r = requests.get("https://gamma-api.polymarket.com/events?limit=1000&active=true&closed=true&order=closedTime&ascending=false",timeout=60)
                 print(f"Status Code: {r.status_code}")
@@ -78,7 +77,8 @@ class Betcheck(commands.Cog):
                                             new_bb = round((shares + curr_bb),2)
                                             name = user_data[1]
                                             cursor.execute("UPDATE Users SET BetterBucks = ? WHERE User_id = ?",(new_bb,user))
-                                            cursor.execute("UPDATE Transactions SET Win = 'Yes' WHERE User_id = ? AND Event = ? AND Question = ? ",(user,trans_event,trans_question))
+                                            cursor.execute("UPDATE Transactions SET Win = 'Yes', Resolved = 'YES' WHERE User_id = ? AND Event = ? AND Question = ? ",(user,trans_event,trans_question))
+                                            
 
                                             #print(f"{name} Won {shares} BetterBucks By Correctly Guessing If `{question}` Their New Balance Is {new_bb}")
                                             await thread.send(f"{name} Won {shares} BetterBucks By Correctly Guessing If `{question}` Their New Balance Is {new_bb}")
@@ -89,7 +89,7 @@ class Betcheck(commands.Cog):
                                             cursor.execute("SELECT User_Name FROM Users WHERE User_id = ?",(user,))
                                             user_data = cursor.fetchone()
                                             name = user_data[0]
-                                            cursor.execute("UPDATE Transactions SET Win = 'No' WHERE User_id = ? AND Event = ? AND Question = ? ",(user,trans_event,trans_question))
+                                            cursor.execute("UPDATE Transactions SET Win = 'No', Resolved = 'YES' WHERE User_id = ? AND Event = ? AND Question = ? ",(user,trans_event,trans_question))
                                             #print(f"{name} Lost {shares} BetterBucks On `{question}` What A Loser")
                                             await thread.send(f"{name} Lost {shares} BetterBucks On `{question}` What A Loser")
                                         except Exception as e:
