@@ -1062,19 +1062,26 @@ class SheetView(discord.ui.View):
 
 
     async def previous(self, interaction: discord.Interaction):
-        if self.current_page > 0:
-            self.current_page -= 1
-            self.setup_buttons()  # Rebuild buttons for the new page
-            await self.update_message(interaction)
-
-    async def next(self, interaction: discord.Interaction):
-        if self.current_page < len(self.embeds) - 1:
-            try:
-                self.current_page += 1
+        try:
+                if self.current_page > 0:
+                    self.current_page -= 1
+                else:
+                    self.current_page = len(self.embeds) - 1  # Wrap around to last page
                 self.setup_buttons()  # Rebuild buttons for the new page
                 await self.update_message(interaction)
-            except Exception as e:
-                print(e)
+        except Exception as e:
+            print(e)
+
+    async def next(self, interaction: discord.Interaction):
+        try:
+            if self.current_page < len(self.embeds) - 1:
+                self.current_page += 1
+            else:
+                self.current_page = 0  # Wrap around to first page
+            self.setup_buttons()  # Rebuild buttons for the new page
+            await self.update_message(interaction)
+        except Exception as e:
+            print(e)
 
     async def update_message(self, interaction: discord.Interaction):
         embed = self.embeds[self.current_page]
