@@ -1,5 +1,6 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+from itertools import cycle
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -9,6 +10,11 @@ GUILD_ID = discord.Object(os.getenv('GUILD_ID'))
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+bot_status = cycle(['/help'])
+
+@tasks.loop(seconds=5)
+async def change_status():
+    await client.change_presence(activity=discord.Game(next(bot_status)))
 
 class Client(commands.Bot):
     def __init__(self):
@@ -19,8 +25,16 @@ class Client(commands.Bot):
         await self.tree.sync(guild=GUILD_ID)
         print(f"Commands synced to guild {GUILD_ID.id}")
 
+    
+
+
     async def on_ready(self):
         print(f'Logged on as {self.user}')
+        change_status.start()
+
+
+
+    
 
 client = Client()
 
@@ -38,6 +52,11 @@ async def main():
     async with client:
         await load_cogs()
         await client.start(os.getenv("DISCORD_TOKEN"))
+
+
+
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())

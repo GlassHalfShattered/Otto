@@ -16,6 +16,9 @@ class Ping(commands.Cog):
         ping_embed.add_field(name=f"{self.bot.user.name}'s Latency (ms): ", value=f"{round(self.bot.latency * 1000)}ms", inline=False)
         ping_embed.set_footer(text=f"Requested by {interaction.user.name}.", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         await interaction.response.send_message(embed=ping_embed)
+    @app_commands.command(name="help", description="Provides the link to Otto's documentation")
+    async def help(self, interaction: discord.Interaction):
+        await interaction.response.send_message('https://glasshalfshattered.github.io/posts/Command-List')
 
 
 async def setup(bot):

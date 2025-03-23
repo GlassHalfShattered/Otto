@@ -184,7 +184,7 @@ class Polymarket(commands.Cog):
 
     @app_commands.command(name="polymarket", description="View spread of a specific market and place a bet")
     async def polymarket(self, interaction: discord.Interaction, url : str):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         self.member_id = interaction.user.id
         self.guild_id = interaction.guild.id
         slug = url.split("event/")[1].split("?tid")[0]
@@ -238,7 +238,7 @@ class Polymarket(commands.Cog):
             return
 
         view = PaginatedView(embed_data, self)
-        await interaction.followup.send(embed=embed_data[0][0], view=view)
+        await interaction.followup.send(embed=embed_data[0][0], view=view, ephemeral=True)
 
 
 async def setup(bot):
