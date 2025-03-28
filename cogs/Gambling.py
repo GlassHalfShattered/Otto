@@ -184,38 +184,63 @@ class Polymarket(commands.Cog):
 
     @app_commands.command(name="polymarket", description="View spread of a specific market and place a bet")
     async def polymarket(self, interaction: discord.Interaction, url : str):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
+        print("Deferred response sent")
+    
         self.member_id = interaction.user.id
         self.guild_id = interaction.guild.id
         slug = url.split("event/")[1].split("?tid")[0]
-        r = requests.get(
-            f"https://gamma-api.polymarket.com/events?limit=1000&active=true&slug={slug.lower()}&closed=false&order=liquidity&ascending=false",
-            timeout=60
-        )
-        print(f"Status Code: {r.status_code}")
-        r.raise_for_status()
-        response = r.json()
-        embed_data = [] 
+        api_url = f"https://gamma-api.polymarket.com/events?limit=1000&active=true&slug={slug.lower()}&closed=false&order=liquidity&ascending=false"
+        print(f"Requesting API: {api_url}")
+        
+        try:
+                r = requests.get(api_url, timeout=5)  # Reduced timeout for faster failure
+                print(f"Request completed with status: {r.status_code}")
+                print(f"Response headers: {r.headers}")
+                print(f"Raw response length: {len(r.text)} bytes")
+                
+                r.raise_for_status()
+                response = r.json()
+                print(f"JSON parsed successfully, item count: {len(response)}")
+        
+        except requests.Timeout:
+                print("Request timed out")
+                await interaction.followup.send("Request timed out. The API might be slow or unreachable.", ephemeral=True)
+                return
+        except requests.RequestException as e:
+                print(f"Request failed: {e}")
+                await interaction.followup.send(f"API error: {str(e)}", ephemeral=True)
+                return
+        except ValueError as e:
+                print(f"JSON parsing failed: {e}")
+                await interaction.followup.send("Error parsing API response.", ephemeral=True)
+                return
+        embed_data = []
         self.end_date = "N/A"
-
+        print(f"Processing response with {len(response)} events")
         for self.event in response:
+            print(f"Event slug: {self.event['slug']}, checking against: {slug}")
             if self.event['slug'].lower() == slug.lower():
+                print(f"Found matching event, markets count: {len(self.event.get('markets', []))}")
                 for i, market in enumerate(self.event['markets'], 1):
                     question = market.get('question', 'N/A')
                     outcome_prices_str = market.get('outcomePrices', '["N/A", "N/A"]')
                     volume = market.get('volume', '0')
                     self.end_date = market.get('endDate', 'N/A')
+                    print(f"Market {i}: {question}, prices: {outcome_prices_str}")
 
                     try:
                         outcome_prices = json.loads(outcome_prices_str)
                         yes_price = round(float(outcome_prices[0] if len(outcome_prices) > 0 else 'N/A'),2)
                         no_price = round(float(outcome_prices[1] if len(outcome_prices) > 0 else 'N/A'),2)
-                    except (json.JSONDecodeError, TypeError):
+                    except (json.JSONDecodeError, TypeError, ValueError):
                         yes_price, no_price = 'N/A', 'N/A'
 
                     if yes_price == 'N/A' and no_price == 'N/A' and volume == '0':
+                        print(f"Skipping market {i}: all N/A and zero volume")
                         continue
                     if yes_price == 1.0 and no_price == 0.0 or yes_price == 0.0 and no_price == 1.0:
+                        print(f"Skipping market {i}: resolved market")
                         continue
                     embed = discord.Embed(
                         title=f"Market {i} for \"{self.event['title']}\"",
@@ -225,20 +250,25 @@ class Polymarket(commands.Cog):
                     embed.add_field(name="Outcome Prices", value=f"Yes: {yes_price}\nNo: {no_price}", inline=True)
                     embed.add_field(name="Volume", value=f"${float(volume):,.2f}", inline=True)
                     embed.set_footer(text=f"Resolves after {self.end_date} | Page {i}/{len(self.event['markets'])}")
+                    print(f"Added market {i} to embed_data")
 
                     embed_data.append((embed, yes_price, no_price, question))
 
                 break
         else:
+            print("No matching event found")
             await interaction.followup.send(f"No active event found with the title '{slug}'.", ephemeral=True)
             return
 
         if not embed_data:
+            print("No markets available")
             await interaction.followup.send("No markets available for this event.", ephemeral=True)
             return
-
+        print("Creating PaginatedView")
         view = PaginatedView(embed_data, self)
-        await interaction.followup.send(embed=embed_data[0][0], view=view, ephemeral=True)
+        print("Sending follow-up with embed")
+        await interaction.followup.send(embed=embed_data[0][0], view=view)
+        print("Follow-up sent successfully")
 
 
 async def setup(bot):
