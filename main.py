@@ -10,6 +10,7 @@ GUILD_ID = discord.Object(os.getenv('GUILD_ID'))
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.guilds = True
 bot_status = cycle(['/help'])
 
 @tasks.loop(seconds=5)
