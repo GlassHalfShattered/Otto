@@ -140,6 +140,23 @@ class Wheel(commands.Cog):
     async def on_ready(self):
         print(f'{__name__} is online')
 
+
+    async def auto_spin(self, names: str):
+        name_list = [name.strip() for name in names.split(',') if name.strip()]
+        if not name_list:
+            return None, None, "Please provide at least one name!"
+        if len(name_list) < 2:
+            return None, None, "Please provide at least two names to spin the wheel!"
+
+        try:
+            winner, gif_path = generate_gif(name_list)
+            return winner, gif_path, None
+        except Exception as e:
+            print(f"Command error: {e}")
+            traceback.print_exc()
+            return None, None, f"An error occurred: {str(e)}"
+
+
     @app_commands.command(name="spin", description="Spin a wheel with custom names!")
     @app_commands.describe(names="Enter names separated by commas (e.g., Alice, Bob, Charlie)")
     async def spin(self, interaction: discord.Interaction, names: str):
@@ -162,6 +179,7 @@ class Wheel(commands.Cog):
             await interaction.followup.send(f"An error occurred: {str(e)}")
             print(f"Command error: {e}")
             traceback.print_exc()
+    
 
 async def setup(bot):
     await bot.add_cog(Wheel(bot), guilds=[GUILD_ID])

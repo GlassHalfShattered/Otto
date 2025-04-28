@@ -4,3 +4,5 @@ __pycache__
 .dockerignore
 level.db
 Exorcists.db
+activity.db
+groove_grove.db

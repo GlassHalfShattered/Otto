@@ -330,9 +330,8 @@ class LevelSys(commands.Cog):
                 embed.description = "\n".join(description)
 
                 # Create the view (optional, you can modify or remove if not needed)
-                view = LeaderboardView(results, interaction.guild)
 
-                await interaction.response.send_message(embed=embed, view=view)
+                await interaction.response.send_message(embed=embed)
 
             except sqlite3.Error as e:
                 print(f"Database error in pointdiffs: {e}")

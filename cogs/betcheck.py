@@ -1,8 +1,6 @@
 import requests
 import json
-import discord
 from discord.ext import commands
-from discord import app_commands
 from main import GUILD_ID
 import sqlite3
 from datetime import date
@@ -18,10 +16,15 @@ class Betcheck(commands.Cog):
         self.bot = bot
         self.db_path = "./config/db/polymarket.db"
         self.channel = int(os.getenv('CHANNEL_ID'))
+        self.cron = None
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'{__name__} is online')
+        if self.cron is not None:
+            self.cron.stop()
+            print("stopped existing cron job")
         self.cron = aiocron.crontab('0 9 * * *', func=self.check_bets, start=True)
+        print("started a new cron job")
 
     async def check_bets(self,):
         current_date = date.today()

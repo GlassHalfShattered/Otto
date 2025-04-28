@@ -1,7 +1,8 @@
-__pycache__
+_pycache__
 .env
 .gitignore
 .dockerignore
 level.db
 Exorcists.db
-XXX332883.png
+activity.db
+groove_grove.db
