@@ -139,19 +139,13 @@ class DiceAmount(discord.ui.View):
         result = dice.roll(roll)
         await interaction.response.send_message(result, delete_after=10)
         try:
-                print(f"Attempting to fetch channel with ID: {self.cog.ID}")
                 channel = await interaction.guild.fetch_channel(self.cog.ID)
-                print(f"Channel fetched: {channel.name} (ID: {channel.id})")
                 await channel.send(result)
-                print(f"Result sent to channel: {result}")
         except discord.errors.NotFound:
-                print(f"Error: Channel with ID {self.cog.ID} not found")
                 await interaction.followup.send(f"Error: Archive channel not found", ephemeral=True)
         except discord.errors.Forbidden:
-                print(f"Error: Bot lacks permission to send to channel {self.cog.ID}")
                 await interaction.followup.send(f"Error: I don’t have permission to send to the archive channel", ephemeral=True)
         except Exception as e:
-                print(f"Unexpected error sending to channel {self.cog.ID}: {e}")
                 await interaction.followup.send(f"Error sending to archive: {e}", ephemeral=True)
 
 

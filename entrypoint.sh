@@ -92,6 +92,20 @@ if [ ! -f ./config/db/level.db ]; then
     PRIMARY KEY (Guild_id, User_id))"
 
 fi
+ #Initialize groove_grove.db
+if [ ! -f ./config/db/groove_grove.db ]; then
+    touch ./config/db/groove_grove.db
+    sqlite3 ./config/db/groove_grove.db "CREATE TABLE IF NOT EXISTS Nominations (
+        id INTEGER PRIMARY KEY,
+        Username TEXT NOT NULL,
+        Nomination TEXT NOT NULL,
+        Date INTEGER NOT NULL,
+        Link TEXT NOT NULL,
+        UserID TEXT NOT NULL,
+        Artist TEXT
+    );" || { echo "Error creating Nominations table"; exit 1; }
+    echo "groove_grove.db initialized successfully"
+fi
 # Initialize polymarket.db
 if [ ! -f ./config/db/polymarket.db ]; then
     touch ./config/db/polymarket.db
