@@ -3,7 +3,7 @@ mkdir -p /app/config/db ./config/images
 # Initialize Exorcists.db
 if [ ! -f ./config/db/Exorcists.db ]; then
     touch ./config/db/Exorcists.db
-sqlite3 ./config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
+    sqlite3 ./config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT DEFAULT '0',
     XID TEXT DEFAULT '0',
@@ -96,13 +96,13 @@ fi
 if [ ! -f ./config/db/groove_grove.db ]; then
     touch ./config/db/groove_grove.db
     sqlite3 ./config/db/groove_grove.db "CREATE TABLE IF NOT EXISTS Nominations (
-        id INTEGER PRIMARY KEY,
-        Username TEXT NOT NULL,
-        Nomination TEXT NOT NULL,
-        Date INTEGER NOT NULL,
-        Link TEXT NOT NULL,
-        UserID TEXT NOT NULL,
-        Artist TEXT
+    id INTEGER PRIMARY KEY,
+    Username TEXT NOT NULL,
+    Nomination TEXT NOT NULL,
+    Date INTEGER NOT NULL,
+    Link TEXT NOT NULL,
+    UserID TEXT NOT NULL,
+    Artist TEXT
     );" || { echo "Error creating Nominations table"; exit 1; }
     echo "groove_grove.db initialized successfully"
 fi
