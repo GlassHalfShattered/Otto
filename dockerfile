@@ -3,6 +3,10 @@ WORKDIR /app
 ARG DISCORD_TOKEN
 ARG CHANNEL_ID
 ARG GUILD_ID
+ARG GROOVE_GROVE
+ARG CLIENT_ID
+ARG CLIENT_SECRET
+ARG REFRESH_TOKEN
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 COPY . .

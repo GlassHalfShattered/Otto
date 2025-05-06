@@ -3,17 +3,28 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 from main import GUILD_ID
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 import pytz
 import os
 from dotenv import load_dotenv 
 import asyncio
 from collections import defaultdict
-now = datetime.now(pytz.timezone('US/Eastern'))
-today = now.date()
-days_since_sunday = today.weekday() + 1  # Sunday is 0, so add
-last_sunday = today - timedelta(days=days_since_sunday)
-this_sunday = last_sunday + timedelta(days=7)
+
+
+def get_current_week():
+    now = datetime.now(pytz.timezone('US/Eastern'))
+    year, week, _ = now.isocalendar()
+    return year, week
+
+def is_in_current_week(date_str):
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        current_year, current_week = get_current_week()
+        date_year, date_week, _ = date_obj.isocalendar()
+        return date_year == current_year and date_week == current_week
+    except ValueError:
+        print(f"Invalid date format: {date_str}")
+        return False
 
 class Nomination(discord.ui.Modal, title="Nomination"):
     def __init__(self, db_path, bot, title="Nomination"):
@@ -76,10 +87,13 @@ class Nomination(discord.ui.Modal, title="Nomination"):
             target_channel = guild.get_channel(int(target_channel_id))
             with sqlite3.connect(self.db_path) as connection:
                 cursor = connection.cursor()
-                cursor.execute("SELECT Nomination, Artist, Username FROM Nominations WHERE Date >= ? AND Date <= ?",
-                (last_sunday.strftime('%Y-%m-%d'), this_sunday.strftime('%Y-%m-%d')))
-                nominations = cursor.fetchall()
-
+                cursor.execute("SELECT Nomination, Artist, Username, Date FROM Nominations")
+                all_nominations = cursor.fetchall()
+            nominations = [
+                (nom, artist, username)
+                for nom, artist, username, date_str in all_nominations
+                if is_in_current_week(date_str)
+            ]
             nominations_dict = defaultdict(list)
             for nomination, artist, username in nominations:
                 nominations_dict[(nomination, artist)].append(username)
@@ -121,10 +135,9 @@ class GGNoms(commands.Cog):
             try:
                 with sqlite3.connect(self.db_path) as connection:
                     cursor = connection.cursor()
-                    cursor.execute("SELECT Nomination FROM Nominations WHERE Date >= ? AND Date <= ?",
-                    (last_sunday.strftime('%Y-%m-%d'), this_sunday.strftime('%Y-%m-%d')))
+                    cursor.execute("SELECT Nomination, Date FROM Nominations")
                     result = cursor.fetchall()
-                    nominations = [row[0] for row in result]
+                    nominations = [row[0] for row in result if is_in_current_week(row[1])]
             except Exception as e:
                 print(f"Error fetching nominations: {e}")
                 return

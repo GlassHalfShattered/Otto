@@ -224,9 +224,9 @@ class LevelSys(commands.Cog):
                         total_length = next_length if not bets[1:] else total_length + len(separator) + bet_length
                     else:
                         break
-            bets_text = separator.join(bets)
-            if len(trans_poly_result) > len(bets):
-                bets_text += " (...and more)"
+                bets_text = separator.join(bets)
+                if len(trans_poly_result) > len(bets):
+                    bets_text += " (...and more)"
 
             stats_embed.add_field(name=f"{interaction.user.name}'Upcoming Bets: ", value=f"{bets_text}", inline=False)
 
