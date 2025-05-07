@@ -22,7 +22,7 @@ class Buy_yes(discord.ui.Modal, title="Buy Yes"):
                     (self.parent_view.member_id, self.parent_view.guild_id)
                 )
                 result = cursor.fetchone()
-                self.curr_bb = float(result[0]) if result else "0"
+                self.curr_bb = round(result[0],2) if result else "0"
                 self.buy_yes = discord.ui.TextInput(
                 label=f"Yes Shares are {self.yes_price} - You have ${self.curr_bb}", 
                 placeholder="How much would you like to bet?",
@@ -82,7 +82,7 @@ class Buy_no(discord.ui.Modal, title="Buy No"):
                     (self.parent_view.member_id, self.parent_view.guild_id)
                 )
                 result = cursor.fetchone()
-                self.curr_bb = result[0] if result else "None"
+                self.curr_bb = round(result[0],2) if result else "None"
             self.buy_no = discord.ui.TextInput(
                 label=f"No Shares are {self.no_price} - You have ${self.curr_bb}", 
                 placeholder="How much would you like to bet?",
