@@ -188,7 +188,7 @@ class LevelSys(commands.Cog):
             xp = level_result[3]
             level_up_xp = level_result[4]
             number_of_messages = level_result[6]
-            curr_bb = user_poly_result[0]
+            curr_bb = round(user_poly_result[0],2)
 
             stats_embed = discord.Embed(title='stats', description="User's stats", color=discord.Color.blue())
             stats_embed.add_field(name=f"{interaction.user.name}'s total XP: ", value=f"{xp}", inline=True)
