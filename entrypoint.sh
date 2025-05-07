@@ -1,6 +1,7 @@
 #!/bin/bash
 mkdir -p /app/config/db ./config/images
 # Initialize Exorcists.db
+# This is a test
 if [ ! -f ./config/db/Exorcists.db ]; then
     touch ./config/db/Exorcists.db
     sqlite3 ./config/db/Exorcists.db "CREATE TABLE IF NOT EXISTS Exorcists (
