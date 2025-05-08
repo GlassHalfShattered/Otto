@@ -20,6 +20,5 @@ jobs:
           image: mrmeatbones/otto
           tags: v1, latest
           registry: docker.io
-          dockerfile: /home/runner/work/Otto/Otto
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
